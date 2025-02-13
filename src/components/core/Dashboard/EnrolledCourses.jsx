@@ -72,6 +72,7 @@ export default function EnrolledCourses() {
                       ? `${course.courseDescription.slice(0, 50)}...`
                       : course.courseDescription}
                   </p>
+
                 </div>
               </div>
               <div className="w-1/4 px-2 py-3">{course?.totalDuration}</div>

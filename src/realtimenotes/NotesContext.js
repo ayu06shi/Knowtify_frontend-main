@@ -11,7 +11,7 @@ export const NotesProvider = ({ children }) => {
 
     // Fetch Initial Notes from Backend
     useEffect(() => {
-        axios.get("http://localhost:4000/Notes").then(response => {
+        axios.get("http://localhost:4000/notes/getNote").then(response => {
             setNotes(response.data);
         });
 
