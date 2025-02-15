@@ -1,4 +1,4 @@
-const BASE_URL = "https://knowtify-qrtw.onrender.com"
+const BASE_URL = "https://knowtify-fmwz.onrender.com"
 
 
 // AUTH ENDPOINTS

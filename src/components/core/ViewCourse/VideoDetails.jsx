@@ -10,6 +10,9 @@ import { markLectureAsComplete } from "../../../services/operations/courseDetail
 import { updateCompletedLectures } from "../../../slices/viewCourseSlice"
 import IconBtn from "../../common/IconBtn"
 import { useForm } from "react-hook-form"
+import io from "socket.io-client"
+
+const socket = io("http://localhost:4000")
 
 const VideoDetails = () => {
   const { courseId, sectionId, subSectionId } = useParams()
@@ -18,6 +21,8 @@ const VideoDetails = () => {
   const playerRef = useRef(null)
   const dispatch = useDispatch()
   const { token } = useSelector((state) => state.auth)
+  // notes
+  const [notes, setNotes] = useState("");
   const { courseSectionData, courseEntireData, completedLectures } =
     useSelector((state) => state.viewCourse)
 
@@ -33,22 +38,49 @@ const VideoDetails = () => {
       formState: { errors },
     } = useForm()
 
+
     useEffect(() => {
       setValue("notes", "")
     }, [])
 
+    useEffect(() => {
+      socket.emit("receive_note", `${courseId}-${sectionId}-${subSectionId}`);
+    
+      // Listen for real-time updates
+      socket.on("receive_update", (content) => {
+        setNotes(content);
+        setValue("notes", content);
+      });
+    
+      return () => {
+        socket.off("receive_update");
+      };
+    }, [courseId, sectionId, subSectionId]);
 
-      // const onSubmit = async (data) => {
-      //   await createNotes(
-      //     {
-      //       notes: data.notes,
-      //     },
-      //     token
-      //   )
-      // }
+      const handleNotesChange = (event) => {
+        const updatedNotes = event.target.value;
+        setNotes(event.target.value);
+
+          // Emit real-time updates
+          socket.emit("update_note", {
+          noteId: `${courseId}-${sectionId}-${subSectionId}`,
+          content: updatedNotes,
+        });
+      };
+      
+      // const handleSaveNotes = () => {
+      //   // Emit the notes update event only when the Save button is clicked
+      //   socket.emit("update_note", {
+      //     courseId,
+      //     sectionId,
+      //     subSectionId,
+      //     notes: notes, // Send the latest notes
+      //   });
+      // };
+      
 
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       if (!courseSectionData.length) return
       if (!courseId && !sectionId && !subSectionId) {
         navigate(`/dashboard/enrolled-courses`)
@@ -268,7 +300,9 @@ const VideoDetails = () => {
         id="notes"
         placeholder="Add Your Notes Here..."
         {...register("notes", { required: true })}
-        className="form-style resize-x-none min-h-[130px] w-full"
+        value={notes}
+        onChange={handleNotesChange}
+        className="form-style resize-x-none min-h-[180px] w-full"
       />
        <div className="mt-3 mb-6 flex w-full justify-end gap-x-2">
           <button
@@ -276,8 +310,8 @@ const VideoDetails = () => {
           >
             Cancel
           </button>
-          <IconBtn text="Save" />
-        </div>
+          <IconBtn text="Edit"/>
+          </div>
     </div>
   )
 }
