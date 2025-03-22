@@ -1,4 +1,4 @@
-const BASE_URL = "https://knowtify-fmwz.onrender.com"
+const BASE_URL = "https://localhost:4000"
 
 
 // AUTH ENDPOINTS
