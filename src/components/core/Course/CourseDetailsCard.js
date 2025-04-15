@@ -6,7 +6,7 @@ import { FaShareSquare } from "react-icons/fa"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
-import { addToCart } from "../../../slices/cartSlice"
+import { addToCart } from "../../../services/operations/authAPI"
 import { ACCOUNT_TYPE } from "../../../utils/constants"
 
 
@@ -32,9 +32,12 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse }) {
       toast.error("You are an Instructor. You can't buy a course.")
       return
     }
-    if (token) {
-      dispatch(addToCart(course))
-      return
+    if (token && course?._id && course?.price) {
+      // Dispatching with course._id and course.price
+      dispatch(addToCart(course._id, course.price));
+      return;
+    } else {
+      toast.error("Invalid course or missing token.");
     }
     setConfirmationModal({
       text1: "You are not logged in!",
@@ -45,8 +48,6 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse }) {
       btn2Handler: () => setConfirmationModal(null),
     })
   }
-
-  // console.log("Student already enrolled ", course?.studentsEnroled, user?._id)
 
   return (
     <>

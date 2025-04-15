@@ -1,5 +1,5 @@
 const BASE_URL = "http://localhost:4000"
-
+//https://knowtify-fmwz.onrender.com
 
 // AUTH ENDPOINTS
 export const endpoints = {
@@ -8,6 +8,10 @@ export const endpoints = {
   LOGIN_API: BASE_URL + "/auth/login",
   RESETPASSTOKEN_API: BASE_URL + "/auth/reset-password-token",
   RESETPASSWORD_API: BASE_URL + "/auth/reset-password",
+  GET_CART_API: BASE_URL + "/cart/fetch",
+  ADD_TO_CART_API: BASE_URL +"/cart/add",
+  REMOVE_FROM_CART_API: BASE_URL +"/cart/remove",
+  CLEAR_CART_API: BASE_URL +"/cart/clear"
 }
 
 // PROFILE ENDPOINTS

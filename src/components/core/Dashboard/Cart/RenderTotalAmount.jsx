@@ -1,7 +1,6 @@
 import { useDispatch, useSelector } from "react-redux"
+import IconBtn  from '../../../common/IconBtn'
 import { useNavigate } from "react-router-dom"
-
-import IconBtn from "../../../common/IconBtn"
 import { buyCourse } from "../../../../services/operations/studentFeaturesAPI"
 
 export default function RenderTotalAmount() {
@@ -14,6 +13,11 @@ export default function RenderTotalAmount() {
   const handleBuyCourse = () => {
     const courses = cart.map((course) => course._id)
     buyCourse(token, courses, user, navigate, dispatch)
+  }
+
+  // Check if total is greater than 0 before showing the "Buy Now" button
+  if (total <= 0) {
+    return <p className="text-sm text-richblack-300">0 items in cart</p>
   }
 
   return (

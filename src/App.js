@@ -28,6 +28,9 @@ import CourseDetails from "./pages/CourseDetails";
 import ViewCourse from "./pages/ViewCourse";
 import VideoDetails from "./components/core/ViewCourse/VideoDetails";
 import Instructor from "./components/core/Dashboard/InstructorDashboard/Instructor";
+import { setToken } from "./slices/authSlice";
+import { useEffect } from "react";
+import { getCart } from "./services/operations/authAPI";
 
 function App() {
 
@@ -35,6 +38,17 @@ function App() {
   const navigate = useNavigate();
   
   const { user } = useSelector((state) => state.profile)
+  
+  useEffect(() => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (token) {
+      const cleanToken = token.replace(/^"(.*)"$/, '$1'); // removes outer quotes
+      dispatch(setToken(cleanToken));         // If using redux state for token
+      dispatch(getCart(cleanToken));
+    }
+  }, []);
+  
+  
 
 
   return (

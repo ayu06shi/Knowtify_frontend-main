@@ -1,10 +1,11 @@
-import { useSelector } from "react-redux"
+import React from "react";
+import { useSelector } from "react-redux";
 
-import RenderCartCourses from "./RenderCartCourses"
-import RenderTotalAmount from "./RenderTotalAmount"
+import RenderCartCourses from "./RenderCartCourses";
+import RenderTotalAmount from "./RenderTotalAmount";
 
 export default function Cart() {
-  const { total, totalItems } = useSelector((state) => state.cart)
+  const { total, totalItems } = useSelector((state) => state.cart);
 
   return (
     <>
@@ -23,5 +24,5 @@ export default function Cart() {
         </p>
       )}
     </>
-  )
+  );
 }
