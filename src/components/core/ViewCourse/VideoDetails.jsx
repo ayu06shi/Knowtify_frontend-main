@@ -23,6 +23,8 @@ const VideoDetails = () => {
   const { token } = useSelector((state) => state.auth)
   // notes
   const [notes, setNotes] = useState("");
+  const [isPublic, setIsPublic] = useState(false)
+  
   const { courseSectionData, courseEntireData, completedLectures } =
     useSelector((state) => state.viewCourse)
 
@@ -78,6 +80,41 @@ const VideoDetails = () => {
       //   });
       // };
       
+      const handlePublicToggle = () => {
+        setIsPublic((prev) => !prev)
+      }
+      
+      const handleCancelNotes = () => {
+        setNotes("")
+        setValue("notes", "")
+      }
+      
+      const handleEditNotes = () => {
+        const textarea = document.getElementById("notes")
+        textarea?.focus()
+      }
+      
+      const handleUpdateNotes = () => {
+        socket.emit("update_note", {
+          noteId: `${courseId}-${sectionId}-${subSectionId}`,
+          content: notes,
+          isPublic: isPublic,
+        })
+        console.log("Notes updated", { content: notes, isPublic })
+      }
+      
+      const handleShareNotes = () => {
+        const shareContent = `Here are my notes for this lecture:\n\n${notes}`
+        if (navigator.share) {
+          navigator.share({
+            title: "Lecture Notes",
+            text: shareContent,
+          }).catch((err) => console.log("Share failed:", err))
+        } else {
+          navigator.clipboard.writeText(shareContent)
+          alert("Notes copied to clipboard. You can now share them.")
+        }
+      }
 
   useEffect(() => {
     (async () => {
@@ -295,23 +332,47 @@ const VideoDetails = () => {
 
       <h1 className="mt-4 text-3xl font-semibold">{videoData?.title}</h1>
       <p className="pt-2 pb-6">{videoData?.description}</p>
-      <div className="text-white">ADD NOTES</div>
-      <textarea
-        id="notes"
-        placeholder="Add Your Notes Here..."
-        {...register("notes", { required: true })}
-        value={notes}
-        onChange={handleNotesChange}
-        className="form-style resize-x-none min-h-[180px] w-full"
-      />
-       <div className="mt-3 mb-6 flex w-full justify-end gap-x-2">
-          <button
-            className={`flex cursor-pointer items-center gap-x-2 rounded-md bg-richblack-300 py-[8px] px-[20px] font-semibold text-richblack-900`}
-          >
-            Cancel
-          </button>
-          <IconBtn text="Edit"/>
-          </div>
+      <div>
+  <div className="text-white text-lg font-semibold mb-2">ADD NOTES</div>
+
+  <textarea
+    id="notes"
+    placeholder="Add Your Notes Here..."
+    {...register("notes", { required: true })}
+    value={notes}
+    onChange={handleNotesChange}
+    className="form-style resize-none min-h-[180px] w-full"
+  />
+
+  <div className="flex items-center gap-2 mt-3">
+    <input
+      type="checkbox"
+      id="publicNotes"
+      checked={isPublic}
+      onChange={handlePublicToggle}
+      className="accent-yellow-400"
+    />
+    <label htmlFor="publicNotes" className="text-richblack-5 text-sm">
+      Make Notes Public
+    </label>
+  </div>
+
+  <div className="mt-4 mb-6 flex flex-wrap w-full justify-end gap-2">
+    <button
+      className="flex items-center gap-2 rounded-md bg-richblack-300 py-2 px-5 font-semibold text-richblack-900"
+      onClick={handleCancelNotes}
+    >
+      Cancel
+    </button>
+
+    <IconBtn text="Edit" onClick={handleEditNotes} />
+
+    <IconBtn text="Update Notes" onClick={handleUpdateNotes} />
+
+    <IconBtn text="Share Notes" onClick={handleShareNotes} />
+  </div>
+</div>
+
     </div>
   )
 }

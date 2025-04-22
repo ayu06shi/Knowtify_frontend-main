@@ -1,7 +1,7 @@
 import { toast } from "react-hot-toast"
 
 import { setLoading, setToken } from "../../slices/authSlice"
-import { resetCart,setCartFromBackend } from "../../slices/cartSlice"
+import { addItemOptimistic, removeItemOptimistic, resetCart,setCart, setError } from "../../slices/cartSlice"
 import { setUser } from "../../slices/profileSlice"
 import { apiConnector } from "../apiconnector"
 import { endpoints } from "../apis"
@@ -139,13 +139,16 @@ export function getCart(token) {
         console.log("Response cart data: ", cartData);
         console.log("Token being sent:", token);
         
+        const updatedCart = response.data.cart || response.data;
 
-
-        dispatch(setCartFromBackend({
-          cart: response.items,
-          total: response.total,
-          totalItems: response.totalItems,
-        }));
+        dispatch(
+          setCart({
+            cart: updatedCart.items || [],
+            total: updatedCart.totalAmount || updatedCart.total || 0,
+            totalItems: updatedCart.totalItems || 0,
+          })
+        );
+        
         
       } else {
         console.warn("Cart data missing in response:", response?.data);
@@ -155,9 +158,6 @@ export function getCart(token) {
     }
   };
 }
-
-
-
 
 export function logout(navigate) {
   return (dispatch) => {
@@ -219,75 +219,182 @@ export function resetPassword(password, confirmPassword, token) {
   }
 }
 
-export function addToCart(courseId, price) {
-  return async (dispatch, getState) => {
-    try {
-      const token = getState().auth.token;
-      const response = await apiConnector("POST", ADD_TO_CART_API, {
-        courseId,
-        price,
-      }, {
+// export function addToCart(courseId, price) {
+//   return async (dispatch, getState) => {
+//     try {
+//       const token = getState().auth.token;
+//       const response = await apiConnector("POST", ADD_TO_CART_API, {
+//         courseId,
+//         price,
+//       }, {
+//         Authorization: `Bearer ${token}`,
+//       });
+
+//       console.log("API Response:", response);
+
+//       // Check if there's an error in the response
+//       if (response.data.error) {
+//         throw new Error(response.data.error); // Throw error if there's a message in the response
+//       }
+
+//       const updatedCart = response.data.cart; // Extract updated cart from backend response
+
+//       dispatch(
+//         setCartFromBackend({
+//           cart: updatedCart.items || [],
+//           total: updatedCart.totalAmount || 0,
+//           totalItems: updatedCart.totalItems || 0,
+//         })
+//       );
+
+//       toast.success("Course added to cart");
+
+//     } catch (error) {
+//       console.log("ADD TO CART ERROR:", error);
+//       toast.error(error.message || "Failed to add course to cart");
+//     }
+//   };
+// }
+
+export const addToCart = (course) => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    dispatch(addItemOptimistic(course)); // Optimistic update
+    
+    const response = await apiConnector("POST", ADD_TO_CART_API, { courseId: course._id });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Failed to add to cart");
+    }
+    
+    // Get fresh cart data
+    const cartResponse = await apiConnector("GET", GET_CART_API);
+    dispatch(setCart({
+      items: cartResponse.data.items,
+      total: cartResponse.data.total,
+      totalItems: cartResponse.data.totalItems
+    }));
+    
+    toast.success("Course added to cart");
+  } catch (error) {
+    console.error("ADD_TO_CART_ERROR:", error);
+    dispatch(setError(error.message));
+    dispatch(removeItemOptimistic(course._id)); // Revert optimistic update
+    toast.error(error.message || "Failed to add course");
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
+
+// export function removeFromCart(courseId) {
+//   return async (dispatch, getState) => {
+//     try {
+//       const token = getState().auth.token;
+//       const response = await apiConnector("POST", REMOVE_FROM_CART_API, {
+//         courseId,
+//       }, {
+//         Authorization: `Bearer ${token}`,
+//       });
+
+//       if (!response.data.success) {
+//         throw new Error(response.data.message);
+//       }
+
+//       const updatedCart = response.data.cart;
+
+//       dispatch(
+//         setCartFromBackend({
+//           cart: updatedCart.items || [],
+//           total: updatedCart.total || 0,
+//           totalItems: updatedCart.totalItems || 0,
+//         })
+//       );
+
+//       toast.success("Course removed from cart");
+//     } catch (error) {
+//       console.log("REMOVE FROM CART ERROR:", error);
+//       toast.error("Failed to remove course from cart");
+//     }
+//   };
+// }
+
+export const removeFromCart = (courseId) => async (dispatch, getState) => {
+  try {
+    dispatch(setLoading(true));
+    dispatch(removeItemOptimistic(courseId)); // Optimistic update
+    
+    const token = getState().auth.token;
+    const response = await apiConnector(
+      "DELETE", 
+      REMOVE_FROM_CART_API, 
+      { courseId },
+      {
         Authorization: `Bearer ${token}`,
-      });
-
-      console.log("API Response:", response);
-
-      // Check if there's an error in the response
-      if (response.data.error) {
-        throw new Error(response.data.error); // Throw error if there's a message in the response
       }
+    );
 
-      const updatedCart = response.data.cart; // Extract updated cart from backend response
+    console.log("REMOVE_FROM_CART API RESPONSE:", response);
 
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Failed to remove from cart");
+    }
+
+    // Get fresh cart data from backend
+    const cartResponse = await apiConnector(
+      "GET", 
+      GET_CART_API,
+      null,
+      {
+        Authorization: `Bearer ${token}`,
+      }
+    );
+
+    if (cartResponse.data) {
       dispatch(
-        setCartFromBackend({
-          cart: updatedCart.items || [],
-          total: updatedCart.totalAmount || 0,
-          totalItems: updatedCart.totalItems || 0,
+        setCart({
+          items: cartResponse.data.items || cartResponse.data.courses || [],
+          total: cartResponse.data.total || cartResponse.data.totalAmount || 0,
+          totalItems: cartResponse.data.totalItems || 0,
         })
       );
-
-      toast.success("Course added to cart");
-
-    } catch (error) {
-      console.log("ADD TO CART ERROR:", error);
-      toast.error(error.message || "Failed to add course to cart");
     }
-  };
-}
 
-
-export function removeFromCart(courseId) {
-  return async (dispatch, getState) => {
+    toast.success("Course removed from cart");
+  } catch (error) {
+    console.error("REMOVE_FROM_CART_ERROR:", error);
+    dispatch(setError(error.message));
+    
+    // On error, resync with server to ensure state consistency
     try {
       const token = getState().auth.token;
-      const response = await apiConnector("POST", REMOVE_FROM_CART_API, {
-        courseId,
-      }, {
-        Authorization: `Bearer ${token}`,
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.message);
+      if (token) {
+        const cartResponse = await apiConnector(
+          "GET", 
+          GET_CART_API,
+          null,
+          {
+            Authorization: `Bearer ${token}`,
+          }
+        );
+        if (cartResponse.data) {
+          dispatch(
+            setCart({
+              items: cartResponse.data.items || cartResponse.data.courses || [],
+              total: cartResponse.data.total || cartResponse.data.totalAmount || 0,
+              totalItems: cartResponse.data.totalItems || 0,
+            })
+          );
+        }
       }
-
-      const updatedCart = response.data.cart;
-
-      dispatch(
-        setCartFromBackend({
-          cart: updatedCart.items || [],
-          total: updatedCart.total || 0,
-          totalItems: updatedCart.totalItems || 0,
-        })
-      );
-
-      toast.success("Course removed from cart");
-    } catch (error) {
-      console.log("REMOVE FROM CART ERROR:", error);
-      toast.error("Failed to remove course from cart");
+    } catch (syncError) {
+      console.error("Failed to sync cart after error:", syncError);
     }
-  };
-}
+
+    toast.error(error.message || "Failed to remove course from cart");
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
 
 
 export function clearCart() {
@@ -303,7 +410,7 @@ export function clearCart() {
       }
 
       dispatch(
-        setCartFromBackend({
+        setCart({
           cart: [],
           total: 0,
           totalItems: 0,

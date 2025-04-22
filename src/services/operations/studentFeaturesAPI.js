@@ -41,6 +41,7 @@ export async function buyCourse(token, courses, userDetails, navigate, dispatch)
                                 {
                                     Authorization: `Bearer ${token}`,
                                 })
+                                console.log("Auth Token: ", token);
 
         if(!orderResponse.data.success) {
             throw new Error(orderResponse.data.message);
